@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-obsidian text-gray-200;
+  }
+  
+  /* Focus outlines for high accessibility compliance */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-neon ring-offset-2 ring-offset-obsidian;
+  }
+}
+
+/* Premium Custom Neon Glow styles */
+.text-neon-glow {
+  text-shadow: 0 0 10px rgba(0, 255, 0, 0.5), 0 0 20px rgba(0, 255, 0, 0.2);
+}
+
+.box-neon-glow {
+  box-shadow: 0 0 15px rgba(0, 255, 0, 0.15), inset 0 0 8px rgba(0, 255, 0, 0.05);
+}
+
+.box-neon-glow-active {
+  box-shadow: 0 0 25px rgba(0, 255, 0, 0.35), inset 0 0 12px rgba(0, 255, 0, 0.15);
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0B0E14;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #222f44;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #00FF00;
+}
