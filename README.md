@@ -2,7 +2,7 @@
 title: Carbon Tracker
 emoji: 🌱
 colorFrom: green
-colorTo: black
+colorTo: grey
 sdk: docker
 app_port: 8080
 ---
