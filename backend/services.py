@@ -28,7 +28,7 @@ def generate_carbon_estimate(request: TrackRequest) -> TrackResponse:
         "Your task is to analyze the user's activity and estimate its carbon footprint in kilograms of CO2 equivalent (kg CO2e)."
     )
 
-    model_name: str = 'gemini-1.5-flash'
+    model_name: str = 'gemini-2.5-flash'
     config: types.GenerateContentConfig = types.GenerateContentConfig(
         system_instruction=system_instruction,
         response_mime_type="application/json",

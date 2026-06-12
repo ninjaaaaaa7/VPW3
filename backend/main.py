@@ -20,11 +20,11 @@ app.add_middleware(
 )
 
 @app.post("/api/track", response_model=TrackResponse)
-async def track_activity(request: TrackRequest) -> TrackResponse:
+def track_activity(request: TrackRequest) -> TrackResponse:
     """
     API endpoint that accepts an activity log and returns a carbon estimate.
     """
-    return await generate_carbon_estimate(request)
+    return generate_carbon_estimate(request)
 
 frontend_dist: str = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend", "dist"))
 
