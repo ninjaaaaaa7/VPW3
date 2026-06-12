@@ -6,14 +6,21 @@ from google.genai import types
 from backend.models import TrackRequest, TrackResponse
 
 def get_genai_client() -> genai.Client:
-    """Initializes and returns the Google GenAI SDK client."""
+    """
+    Initializes and returns the Google GenAI SDK client.
+    """
     api_key: str | None = os.getenv("GEMINI_API_KEY")
     if not api_key:
-        raise HTTPException(status_code=500, detail="GEMINI_API_KEY environment variable is not configured.")
+        raise HTTPException(
+            status_code=500,
+            detail="GEMINI_API_KEY environment variable is not configured."
+        )
     return genai.Client(api_key=api_key)
 
-def process_carbon_tracking(request: TrackRequest) -> TrackResponse:
-    """Analyzes the carbon footprint using Gemini AI with fallback model routing."""
+def generate_carbon_estimate(request: TrackRequest) -> TrackResponse:
+    """
+    Analyzes the carbon footprint using Gemini AI with fallback model routing.
+    """
     client: genai.Client = get_genai_client()
     system_instruction: str = (
         "You are an Eco-Tracker, an expert AI model specializing in environmental science, "
@@ -68,7 +75,10 @@ def process_carbon_tracking(request: TrackRequest) -> TrackResponse:
                 raise api_err
 
         if not response.text:
-            raise HTTPException(status_code=500, detail="Empty response received from the GenAI service.")
+            raise HTTPException(
+                status_code=500,
+                detail="Empty response received from the GenAI service."
+            )
 
         result_data: dict = json.loads(response.text)
 
@@ -78,8 +88,17 @@ def process_carbon_tracking(request: TrackRequest) -> TrackResponse:
         return TrackResponse(**result_data)
 
     except json.JSONDecodeError as e:
-        raise HTTPException(status_code=500, detail=f"The GenAI model returned an invalid JSON response structure: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"The GenAI model returned an invalid JSON response structure: {str(e)}"
+        )
     except ValueError as e:
-        raise HTTPException(status_code=500, detail=f"The GenAI model response failed semantic structural validation: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"The GenAI model response failed semantic structural validation: {str(e)}"
+        )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error communicating with Google GenAI service: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error communicating with Google GenAI service: {str(e)}"
+        )
