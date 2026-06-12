@@ -1,16 +1,10 @@
 import os
-import json
-import logging
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, constr
-from google import genai
-from google.genai import types
-
-logging.basicConfig(level=logging.INFO)
-logger: logging.Logger = logging.getLogger("carbon_tracker")
+from backend.models import TrackRequest, TrackResponse
+from backend.services import generate_carbon_estimate
 
 app: FastAPI = FastAPI(
     title="Carbon Footprint Awareness Platform",
@@ -25,85 +19,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-class TrackRequest(BaseModel):
-    activity: constr(min_length=3, max_length=500, strip_whitespace=True)
-
-class TrackResponse(BaseModel):
-    estimated_kg: float
-    analysis: str
-    reduction_steps: list[str]
-
-def get_genai_client() -> genai.Client:
-    api_key: str | None = os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        raise HTTPException(
-            status_code=500,
-            detail="GEMINI_API_KEY environment variable is not configured on the server."
-        )
-    return genai.Client(api_key=api_key)
-
 @app.post("/api/track", response_model=TrackResponse)
 async def track_activity(request: TrackRequest) -> TrackResponse:
-    client: genai.Client = get_genai_client()
-    system_instruction: str = (
-        "You are an Eco-Tracker, an expert AI model specializing in environmental science, "
-        "carbon accounting, and sustainability. "
-        "Your task is to analyze the user's activity and estimate its carbon footprint in kilograms of CO2 equivalent (kg CO2e)."
-    )
-    
-    try:
-        model_name: str = 'gemini-1.5-flash'
-        config: types.GenerateContentConfig = types.GenerateContentConfig(
-            system_instruction=system_instruction,
-            response_mime_type="application/json",
-            response_schema=types.Schema(
-                type=types.Type.OBJECT,
-                properties={
-                    "estimated_kg": types.Schema(type=types.Type.NUMBER),
-                    "analysis": types.Schema(type=types.Type.STRING),
-                    "reduction_steps": types.Schema(
-                        type=types.Type.ARRAY,
-                        items=types.Schema(type=types.Type.STRING)
-                    )
-                },
-                required=["estimated_kg", "analysis", "reduction_steps"]
-            )
-        )
-        
-        response = client.models.generate_content(
-            model=model_name,
-            contents=request.activity,
-            config=config
-        )
-        
-        if not response.text:
-            raise HTTPException(
-                status_code=500,
-                detail="Empty response received from the GenAI service."
-            )
-            
-        result_data: dict = json.loads(response.text)
-        
-        if "estimated_kg" not in result_data or "analysis" not in result_data or "reduction_steps" not in result_data:
-            raise ValueError("Missing required keys in response structure.")
-            
-        return TrackResponse(**result_data)
-
-    except json.JSONDecodeError as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"The GenAI model returned an invalid JSON response structure: {str(e)}"
-        )
-    except ValueError as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"The GenAI model response failed semantic structural validation: {str(e)}"
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error communicating with Google GenAI service: {str(e)}"
-        )
+    """
+    API endpoint that accepts an activity log and returns a carbon estimate.
+    """
+    return await generate_carbon_estimate(request)
 
 frontend_dist: str = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend", "dist"))
 
@@ -114,6 +35,9 @@ if os.path.exists(frontend_dist):
         
     @app.get("/{rest_of_path:path}", response_model=None, response_class=FileResponse)
     async def serve_spa(rest_of_path: str) -> FileResponse:
+        """
+        Serves the React single page application files.
+        """
         if rest_of_path.startswith("api"):
             raise HTTPException(status_code=404, detail="API route not found")
             
@@ -124,6 +48,9 @@ if os.path.exists(frontend_dist):
 else:
     @app.get("/{rest_of_path:path}", response_model=None, response_class=JSONResponse)
     async def serve_fallback(rest_of_path: str) -> JSONResponse:
+        """
+        Provides fallback message during backend-only development.
+        """
         if rest_of_path.startswith("api"):
             raise HTTPException(status_code=404, detail="API route not found")
         return JSONResponse(
